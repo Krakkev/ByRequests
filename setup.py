@@ -10,7 +10,7 @@ setup(
     author = 'Kevin B. Garcia Alonso',
     author_email = 'kevangy@hotmail.com',
     url = 'https://github.com/Krakkev/ByRequests', # use the URL to the github repo
-    download_url = 'https://github.com/Krakkev/ByRequests/archive/0.1.tar.gz', # I'll explain this in a second
+    download_url = 'https://github.com/Krakkev/ByRequests/tarball/0.1', # I'll explain this in a second
     keywords = ['requests', 'request', 'proxy', 'proxies', 'beautifulsoap', 'xpath', 'GET', 'POST'],
     install_requires=[
         'beautifulsoup4>=4.6.0',
