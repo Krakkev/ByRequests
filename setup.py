@@ -1,8 +1,8 @@
 
-from distutils.core import setup
+import setuptools
 
 
-setup(
+setuptools.setup(
     name = 'ByRequests',
     packages = ['ByRequests'], # this must be the same as the name above
     version = '0.1',
@@ -18,5 +18,8 @@ setup(
         'requests>=2.18.1',
         'urllib3>=1.21.1'
     ],
-    classifiers = [],
+    classifiers=(
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+    ),
 )
