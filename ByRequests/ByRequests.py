@@ -26,6 +26,7 @@ class ByRequest():
     proxies_order = [None, "crawlera", "scrapoxy", "luminati"]
     headers = {}
     cookies = {}
+    verify = True
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
                  delay=False, verify=True):
@@ -49,6 +50,7 @@ class ByRequest():
             * list [min, max] of the range of random seconds of wait between a request failed and a new retry
             * tuple (min, max) of the range of random seconds of wait between a request failed and a new retry
             * int or string digit of the max seconds of wait after a request failed
+        :param verify: Boolean to indicate if the SSL verification is enabled or not
         """
         if max_retries:
             logger.debug("Assigning max_retries...")
@@ -268,14 +270,14 @@ class ByRequest():
         """
         return self.request('GET', url, return_json=return_json, fake_ua=fake_ua, br_session=br_session, **kwargs)
 
-    def soup(self, url):
+    def soup(self, url, **kwargs):
         """
         Method to parse the soup from an specific url
         :param url: str of the url of the html
         :return: BeautifulSoup
         """
         logger.debug("Getting soup...")
-        response = self.get(url)
+        response = self.get(url, **kwargs)
         if response:
             try:
                 return BeautifulSoup(response.content, 'html.parser')
@@ -286,14 +288,14 @@ class ByRequest():
         else:
             logger.error("Soup cannot be returned")
 
-    def xpath(self, url):
+    def xpath(self, url, **kwargs):
         """
         Method to parse the xpath tree from an specific url
         :param url: str of the url of the html
         :return: XpathTree
         """
         logger.debug("Getting xpath...")
-        response = self.get(url)
+        response = self.get(url, **kwargs)
         if response:
             try:
                 tree = html.fromstring(response.content)
