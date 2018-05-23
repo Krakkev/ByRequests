@@ -16,7 +16,8 @@ setuptools.setup(
         'beautifulsoup4>=4.6.0',
         'bs4>=0.0.1',
         'requests>=2.18.1',
-        'urllib3>=1.21.1'
+        'urllib3>=1.21.1',
+        'fake-useragent>=0.1.10'
     ],
     classifiers=(
         "Programming Language :: Python :: 3",
