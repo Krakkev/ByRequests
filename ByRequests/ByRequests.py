@@ -80,7 +80,7 @@ class ByRequest():
             elif isinstance(proxies, dict):
                 logger.debug("Assigning order and max retries of proxy servers...")
                 proxies_retries_aux = {}
-                for proxy, retries in proxies:
+                for proxy, retries in proxies.items():
                     if proxy in self.proxies_retries.keys() or (
                             isinstance(proxy, str) and proxy.lower() in self.proxies_retries.keys()):
                         try:
