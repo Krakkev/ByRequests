@@ -26,6 +26,7 @@ class ByRequest():
     proxies_order = [None, "crawlera", "scrapoxy", "luminati"]
     headers = {}
     cookies = {}
+    verify = True
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
                  delay=False, verify=True):
