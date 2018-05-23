@@ -168,7 +168,7 @@ class ByRequest():
             self.verify = verify
 
 
-    def request(self, method, url, fake_ua=False, return_json=False, br_session=True, **kwargs):
+    def request(self, method, url, fake_ua=False, return_json=False, br_session=True,  **kwargs):
         """
         Method to create a http request
         :param method: str "GET" or "POST" to indicate the request method
