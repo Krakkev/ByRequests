@@ -24,12 +24,11 @@ class ByRequest():
     delay = [1, 3]
     max_retries = 2
     proxies_order = [None, "crawlera", "scrapoxy", "luminati"]
-    verify = True
     headers = {}
     cookies = {}
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
-                 delay=False):
+                 delay=False, verify=True):
         """
         Create object with the initial parameters
         :param proxies:
@@ -164,6 +163,10 @@ class ByRequest():
                     self.delay[1] = int(delay)
                 except:
                     logger.error("Delay value cannot be converted into integer")
+
+        if verify is not True:
+            self.verify = verify
+
 
     def request(self, method, url, fake_ua=False, return_json=False, br_session=True, **kwargs):
         """
