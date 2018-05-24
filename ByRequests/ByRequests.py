@@ -372,7 +372,7 @@ class ByRequest():
         total = 0
         total_succ = 0
         total_fail = 0
-        for proxy, dict_ in self.status.items():
+        for proxy, dict_ in self.stats.items():
             if dict_["Total"] > 0:
                 total += dict_["Total"]
                 total_succ += dict_["Successful"]
