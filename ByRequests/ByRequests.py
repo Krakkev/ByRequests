@@ -207,7 +207,7 @@ class ByRequest():
                 if len(delay_after) == 2:
                     logger.debug("Assigning min & max seconds...")
                     try:
-                        if int(delay_after[0]) > int(delay_after[1]):
+                        if int(delay_after[0]) < int(delay_after[1]):
                             self.delay_after[0] = int(delay_after[0])
                             self.delay_after[1] = int(delay_after[1])
                         else:
@@ -388,9 +388,9 @@ class ByRequest():
             logger.error("Soup cannot be returned")
 
     def print_status(self, percentage=True):
-        print("------------------------------------------------------------")
-        print("---                       Stats                          ---")
-        print("------------------------------------------------------------")
+        print("----------------------------------------------------------------------")
+        print("---                            Stats                               ---")
+        print("----------------------------------------------------------------------")
         total = 0
         total_succ = 0
         total_fail = 0
