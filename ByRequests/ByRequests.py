@@ -27,9 +27,32 @@ class ByRequest():
     headers = {}
     cookies = {}
     verify = True
+    delay_after = [0, 1]
+    stats = {
+        None: {
+            "Total": 0,
+            "Successful": 0,
+            "Failed": 0
+        },
+        "crawlera": {
+            "Total": 0,
+            "Successful": 0,
+            "Failed": 0
+        },
+        "scrapoxy": {
+            "Total": 0,
+            "Successful": 0,
+            "Failed": 0
+        },
+        "luminati": {
+            "Total": 0,
+            "Successful": 0,
+            "Failed": 0
+        }
+    }
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
-                 delay=False, verify=True):
+                 delay=False, delay_after=False, verify=True):
         """
         Create object with the initial parameters
         :param proxies:
@@ -166,6 +189,31 @@ class ByRequest():
                 except:
                     logger.error("Delay value cannot be converted into integer")
 
+        if delay_after:
+            logger.debug("Assigning delay after request...")
+            if isinstance(delay_after, list) or isinstance(delay_after, tuple):
+                if len(delay) == 2:
+                    logger.debug("Assigning min & max seconds...")
+                    try:
+                        self.delay_after[0] = int(delay_after[0])
+                        self.delay_after[1] = int(delay_after[1])
+                    except:
+                        logger.error("Delay value values cannot converted to integers")
+                elif len(delay) == 1:
+                    try:
+                        logger.debug("Assigning max seconds...")
+                        self.delay_after[1] = int(delay_after[0])
+                    except:
+                        logger.error("Delay after value cannot converted to integer")
+                else:
+                    logger.error("Delay after should contain 1 or 2 integer values")
+            else:
+                try:
+                    logger.debug("Assigning max seconds...")
+                    self.delay_after[1] = int(delay)
+                except:
+                    logger.error("Delay after value cannot be converted into integer")
+
         if verify is not True:
             self.verify = verify
 
@@ -186,9 +234,13 @@ class ByRequest():
             if br_session == True:
                 headers_ = kwargs.pop("headers", self.headers)
                 cookies_ = kwargs.pop("cookies", self.cookies)
+                delay = kwargs.pop("delay", self.delay)
+                delay_after = kwargs.pop("delay_after", self.delay_after)
             else:
                 headers_ = kwargs.pop("headers", {})
                 cookies_ = kwargs.pop("cookies", {})
+                delay = kwargs.pop("delay", [0,1])
+                delay_after = kwargs.pop("delay_after", [0,1])
 
             verify_ = kwargs.pop("verify", self.verify)
             timeout_ = kwargs.pop("timeout", self.timeout)
@@ -200,8 +252,9 @@ class ByRequest():
 
             for proxy in self.proxies_order:
                 logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy))
-                for retry in range(1, self.proxies_retries.get(proxy) + 1):
+                for retry in range(1, kwargs.pop("max_retries", self.proxies_retries.get(proxy)) + 1):
                     logger.debug("Try #{retry}...".format(retry=retry))
+                    self.stats[proxy]["Total"] += 1
                     try:
                         if not is_proxies_defined:
                             proxies_ = self.get_proxies(proxy)
@@ -216,6 +269,8 @@ class ByRequest():
                             response = requests.request(method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
                         if response.status_code == 200:
+                            self.stats[proxy]["Successful"] += 1
+                            time.sleep(random.randrange(delay_ater[0], delay_after[1]))
                             if not return_json:
                                 return response
                             else:
@@ -229,14 +284,16 @@ class ByRequest():
                             logger.warning(
                                 "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy, retry=retry,
                                                                                       url=url))
-                            time.sleep(random.randrange(self.delay[0], self.delay[1]))
+                            time.sleep(random.randrange(delay[0], delay[1]))
+                            self.stats[proxy]["Failed"] += 1
                             continue
 
                     except Exception as e:
                         logger.error(e)
                         logger.warning(
                             "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy, retry=retry, url=url))
-                        time.sleep(random.randrange(self.delay[0], self.delay[1]))
+                        time.sleep(random.randrange(delay[0], delay[1]))
+                        self.stats[proxy]["Failed"] += 1
                         continue
                 logger.warning(
                     "[{proxy}] Was not able to return a good response for {url}".format(proxy=proxy, url=url))
@@ -306,6 +363,33 @@ class ByRequest():
 
         else:
             logger.error("Soup cannot be returned")
+
+
+    def print_status(self, percentage=True):
+        print("--------------------------")
+        print("---        Stats       ---")
+        print("--------------------------")
+        total = 0
+        total_succ = 0
+        total_fail = 0
+        for proxy, dict_ in status.items():
+            if dict_["Total"] > 0:
+                total += dict_["Total"]
+                total_succ += dict_["Successful"]
+                total_fail += dict_["Failed"]
+                if proxy == None:
+                    proxies = "Without proxies: "
+                else:
+                    proxies = "Using {} service: ".format("proxy")
+                if percentage:
+                    tot = str(dict_["Total"])
+                    succ = str((dict_["Successful"]/tot)*100) + "%"
+                    fail = str((dict_["Failed"]/tot)*100) + "%"
+                else:
+                    tot = str(dict_["Total"])
+                    succ = str(dict_["Successful"])
+                    fail = str(dict_["Failed"]/tot)
+                print("{proxies} \t {succ} Succesful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
 
     @staticmethod
     def get_proxies(server=None):
