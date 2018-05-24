@@ -242,6 +242,7 @@ class ByRequest():
                 delay = kwargs.pop("delay", [0,1])
                 delay_after = kwargs.pop("delay_after", [0,1])
 
+            proxies_order = kwargs.pop("proxies_order", self.proxies_order)
             verify_ = kwargs.pop("verify", self.verify)
             timeout_ = kwargs.pop("timeout", self.timeout)
             proxies_ = kwargs.pop("proxies", False)
@@ -250,7 +251,7 @@ class ByRequest():
             else:
                 is_proxies_defined = True
 
-            for proxy in self.proxies_order:
+            for proxy in proxies_order:
                 logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy))
                 for retry in range(1, kwargs.pop("max_retries", self.proxies_retries.get(proxy)) + 1):
                     logger.debug("Try #{retry}...".format(retry=retry))
@@ -363,7 +364,6 @@ class ByRequest():
 
         else:
             logger.error("Soup cannot be returned")
-
 
     def print_status(self, percentage=True):
         print("--------------------------")
