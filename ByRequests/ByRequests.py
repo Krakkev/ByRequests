@@ -147,7 +147,7 @@ class ByRequest():
             if isinstance(cookies, requests.cookies.RequestsCookieJar) or isinstance(cookies, dict):
                 self.cookies = cookies
             elif isinstance(cookies, str):
-                if cookies[0] == "{" and cookies[-1] == "}"
+                if cookies[0] == "{" and cookies[-1] == "}":
                     try:
                         self.cookies = ast.literal_eval(cookies)
                     except:
