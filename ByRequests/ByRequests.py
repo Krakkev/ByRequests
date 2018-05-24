@@ -64,7 +64,7 @@ class ByRequest():
                                                  ..} ** The number of tries will overwrite the max_retries param
             *** Use None to use no proxy server
         :param max_retries: integer of max number of retries by failed request for every proxy service
-        :param cookies: RequestCookieJar or Dict with the cookies that will persist for the whole request session
+        :param cookies: RequestCookieJar or Dict or Str with the cookies that will persist for the whole request session
         :param fake_ua: Boolean to indicate if a Fake User-Agent will be used for the whole request session
             ** This User-Agent will overwrite the one from the headers
         :param headers: Dict with the headers that will persist for the whole session
@@ -147,10 +147,13 @@ class ByRequest():
             if isinstance(cookies, requests.cookies.RequestsCookieJar) or isinstance(cookies, dict):
                 self.cookies = cookies
             elif isinstance(cookies, str):
-                try:
-                    self.cookies = ast.literal_eval(cookies)
-                except:
-                    logger.error("Cookies string cannot be converted to dict")
+                if cookies[0] == "{" and cookies[-1] == "}"
+                    try:
+                        self.cookies = ast.literal_eval(cookies)
+                    except:
+                        logger.error("Cookies string cannot be converted to dict")
+                else:
+                    self.headers["cookie"]=cookies
             else:
                 logger.error("Cookies are not valid")
 
