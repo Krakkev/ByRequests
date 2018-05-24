@@ -173,14 +173,20 @@ class ByRequest():
                 if len(delay) == 2:
                     logger.debug("Assigning min & max seconds...")
                     try:
-                        self.delay[0] = int(delay[0])
-                        self.delay[1] = int(delay[1])
+                        if int(delay[0]) < int(delay[1]):
+                            self.delay[0] = int(delay[0])
+                            self.delay[1] = int(delay[1])
+                        else:
+                            logger.error("delay[1] value should be higher than delay[0]")
                     except:
                         logger.error("Delay values cannot converted to integers")
                 elif len(delay) == 1:
                     try:
                         logger.debug("Assigning max seconds...")
-                        self.delay[1] = int(delay[0])
+                        if int(delay[0]) > 1:
+                            self.delay[1] = int(delay[0])
+                        else:
+                            logger.error("delay[0] value should be higher than 1")
                     except:
                         logger.error("Delay value cannot converted to integer")
                 else:
@@ -188,24 +194,34 @@ class ByRequest():
             else:
                 try:
                     logger.debug("Assigning max seconds...")
-                    self.delay[1] = int(delay)
+                    if int(delay) > 1:
+                        self.delay[1] = int(delay)
+                    else:
+                        logger.error("Delay value should be higher than 1")
                 except:
                     logger.error("Delay value cannot be converted into integer")
 
         if delay_after:
             logger.debug("Assigning delay after request...")
             if isinstance(delay_after, list) or isinstance(delay_after, tuple):
-                if len(delay) == 2:
+                if len(delay_after) == 2:
                     logger.debug("Assigning min & max seconds...")
                     try:
-                        self.delay_after[0] = int(delay_after[0])
-                        self.delay_after[1] = int(delay_after[1])
+                        if int(delay_after[0]) > int(delay_after[1]):
+                            self.delay_after[0] = int(delay_after[0])
+                            self.delay_after[1] = int(delay_after[1])
+                        else:
+                            logger.error("delay_after[1] value should be higher than delay_afer[0]")
+
                     except:
                         logger.error("Delay value values cannot converted to integers")
-                elif len(delay) == 1:
+                elif len(delay_after) == 1:
                     try:
                         logger.debug("Assigning max seconds...")
-                        self.delay_after[1] = int(delay_after[0])
+                        if int(delay_after[0]) > 0:
+                            self.delay_after[1] = int(delay_after[0])
+                        else:
+                            logger.error("delay[0] value should be higher than 0")
                     except:
                         logger.error("Delay after value cannot converted to integer")
                 else:
@@ -213,7 +229,10 @@ class ByRequest():
             else:
                 try:
                     logger.debug("Assigning max seconds...")
-                    self.delay_after[1] = int(delay)
+                    if int(delay_after) > 0:
+                        self.delay_after[1] = int(delay_after)
+                    else:
+                        logger.error("Delay value should be higher than 0")
                 except:
                     logger.error("Delay after value cannot be converted into integer")
 
@@ -369,9 +388,9 @@ class ByRequest():
             logger.error("Soup cannot be returned")
 
     def print_status(self, percentage=True):
-        print("--------------------------")
-        print("---        Stats       ---")
-        print("--------------------------")
+        print("------------------------------------------------------------")
+        print("---                       Stats                          ---")
+        print("------------------------------------------------------------")
         total = 0
         total_succ = 0
         total_fail = 0
@@ -383,7 +402,7 @@ class ByRequest():
                 if proxy == None:
                     proxies = "Without proxies: "
                 else:
-                    proxies = "Using {} service: ".format("proxy")
+                    proxies = "Using {proxy} service: ".format(proxy=proxy)
                 if percentage:
                     tot = str(dict_["Total"])
                     succ = str((dict_["Successful"]/dict_["Total"])*100) + "%"
@@ -392,7 +411,7 @@ class ByRequest():
                     tot = str(dict_["Total"])
                     succ = str(dict_["Successful"])
                     fail = str(dict_["Failed"]/dict_["Total"])
-                print("{proxies} \t {succ} Succesful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
+                print("{proxies} \t {succ} Successful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
 
     @staticmethod
     def get_proxies(server=None):
