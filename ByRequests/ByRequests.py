@@ -271,7 +271,7 @@ class ByRequest():
                                                         cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
                         if response.status_code == 200:
                             self.stats[proxy]["Successful"] += 1
-                            time.sleep(random.randrange(delay_ater[0], delay_after[1]))
+                            time.sleep(random.randrange(delay_after[0], delay_after[1]))
                             if not return_json:
                                 return response
                             else:
