@@ -122,7 +122,7 @@ byrequest = ByRequest(delay=5)
 print(byrequest.delay)
 ```
 
-delay_after (DEFAULT=[1, 3])
+delay_after (DEFAULT=[0,1])
 ```python
 #  delay_after parameter determines the range of random time that will be waited afet a good response is obtained
 
@@ -137,7 +137,7 @@ byrequest = ByRequest(delay_after=(5))
 print(byrequest.delay_after)
 ```
 
-verify (DEFAULT=15)
+verify (DEFAULT=True)
 ```python
 #  verify parameter is a boolean to indicate if the SSL verification will be enabled or not during the session
 byrequest = ByRequest(verify=False)
