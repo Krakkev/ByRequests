@@ -383,12 +383,12 @@ class ByRequest():
                     proxies = "Using {} service: ".format("proxy")
                 if percentage:
                     tot = str(dict_["Total"])
-                    succ = str((dict_["Successful"]/tot)*100) + "%"
-                    fail = str((dict_["Failed"]/tot)*100) + "%"
+                    succ = str((dict_["Successful"]/dict_["Total"])*100) + "%"
+                    fail = str((dict_["Failed"]/dict_["Total"])*100) + "%"
                 else:
                     tot = str(dict_["Total"])
                     succ = str(dict_["Successful"])
-                    fail = str(dict_["Failed"]/tot)
+                    fail = str(dict_["Failed"]/dict_["Total"])
                 print("{proxies} \t {succ} Succesful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
 
     @staticmethod
