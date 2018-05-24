@@ -237,7 +237,7 @@ class ByRequest():
                 delay = kwargs.pop("delay", self.delay)
                 delay_after = kwargs.pop("delay_after", self.delay_after)
             else:
-                headers_ = kwargs.pop("headers", {})
+                headers_ = kwargs.pop("headers", {})c
                 cookies_ = kwargs.pop("cookies", {})
                 delay = kwargs.pop("delay", [0,1])
                 delay_after = kwargs.pop("delay_after", [0,1])
@@ -372,7 +372,7 @@ class ByRequest():
         total = 0
         total_succ = 0
         total_fail = 0
-        for proxy, dict_ in status.items():
+        for proxy, dict_ in self.status.items():
             if dict_["Total"] > 0:
                 total += dict_["Total"]
                 total_succ += dict_["Successful"]
