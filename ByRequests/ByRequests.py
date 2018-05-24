@@ -237,7 +237,7 @@ class ByRequest():
                 delay = kwargs.pop("delay", self.delay)
                 delay_after = kwargs.pop("delay_after", self.delay_after)
             else:
-                headers_ = kwargs.pop("headers", {})c
+                headers_ = kwargs.pop("headers", {})
                 cookies_ = kwargs.pop("cookies", {})
                 delay = kwargs.pop("delay", [0,1])
                 delay_after = kwargs.pop("delay_after", [0,1])
