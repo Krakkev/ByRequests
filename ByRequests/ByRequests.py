@@ -300,7 +300,7 @@ class ByRequest():
                             response = requests.request(method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=True, timeout=timeout_, **kwargs)
                         else:
-                            self.logge.debug("Headers --->", str(headers_), "proxies --->", str(proxies_))
+                            self.logger.debug("Headers --->", str(headers_), "proxies --->", str(proxies_))
                             response = requests.request(method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
                         if response.status_code == 200:
@@ -403,6 +403,7 @@ class ByRequest():
         print("------------------------------------------------------------------------------")
         print("---                                Stats                                   ---")
         print("------------------------------------------------------------------------------")
+        self.logger.info("---                                Stats                                   ---")
         total = 0
         total_succ = 0
         total_fail = 0
