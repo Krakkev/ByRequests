@@ -57,27 +57,23 @@ byrequest = ByRequest(proxies=None)
 # Your requestsdone by this session  are going to use the proxy service that you specified
 byrequest = ByRequest(proxies="Crawlera")
 
-# 3rd Option:   proxies="<Proxy Service>"
-# Your requests done by this session are going to use the proxy service that you specified
-byrequest = ByRequest(proxies="Crawlera")
-
-# 4th Option:   proxies=[<Proxy Service>, <Proxy Service>]
+# 3rd Option:   proxies=[<Proxy Service>, <Proxy Service>]
 # The requests done by this session are going to be send with the proxy services that you specified  in the order that they appear for 3 times (Default value for max_retries, unless it has been specified with the max_retries parameter) unless a good response's obtained before.
 # * None represents the use of no proxies
 byrequest = ByRequest(proxies=[None, "Crawlera", "Scrapoxy", "crawlera"])
 
 
-# 5th Option:   proxies={<Proxy Service>: <max retries>, <Proxy Service>: <max retries>}
+# 4th Option:   proxies=[{<Proxy Service>: <max retries>}, {<Proxy Service>: <max retries>}]
 # The requests done by this session are going to be send with the proxy services that you specified  in the order that they appear 'max_retries' times each proxy service until a good response is obtained.
 # * None represents the use of no proxies
-# ** This max_retries overwrites the max_retries parameter
-byrequest = ByRequest(proxies={None: 3, "luminati": 1, "Scrapoxy":"2", "crawlera": "1"])
+# ** This max_retries overrides the max_retries parameter
+byrequest = ByRequest(proxies=[{None: 3}, {"luminati": 1}, "Scrapoxy", {"crawlera": "1"}])
 ```
 
 headers (DEFAULT={})
 ```python
 #  Every request done by this session is going to be send the headers that you define here
-# * If the fake_ua parameter is enable, the User-Agent defined here will be overwrited
+# * If the fake_ua parameter is enable, the User-Agent defined here will be overrided
 headers = {'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5 (.NET CLR 3.5.30729)', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'}
 byrequest = ByRequest(headers=headers)
 print(byrequest.headers)
@@ -95,7 +91,7 @@ print(byrequest.cookies)
 fake_ua (DEFAULT=True)
 ```python
 #  Enable or desable the use of fake useragent in the headers of the session with values True or False
-# * This fake useragent will overwrite the header's User-Agent
+# * This fake useragent will override the header's User-Agent
 byrequest = ByRequest(fake_ua=True)
 print(byrequest.headers)
 ```

@@ -13,43 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class ByRequest():
-    proxies_retries = {
-        None: 3,
-        "crawlera": 3,
-        "scrapoxy": 3,
-        "luminati": 3
-    }
-    timeout = 15
-    extras = {}
-    delay = [1, 3]
-    max_retries = 2
-    proxies_order = [None, "crawlera", "scrapoxy", "luminati"]
-    headers = {}
-    cookies = {}
-    verify = True
-    delay_after = [0, 1]
-    stats = {
-        None: {
-            "Total": 0,
-            "Successful": 0,
-            "Failed": 0
-        },
-        "crawlera": {
-            "Total": 0,
-            "Successful": 0,
-            "Failed": 0
-        },
-        "scrapoxy": {
-            "Total": 0,
-            "Successful": 0,
-            "Failed": 0
-        },
-        "luminati": {
-            "Total": 0,
-            "Successful": 0,
-            "Failed": 0
-        }
-    }
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
                  delay=False, delay_after=False, verify=True):
@@ -58,15 +21,15 @@ class ByRequest():
         :param proxies:
             * list of proxy services in execution order ["1st proxy service", "2nd", "3rd", ...]
             * str of the only proxy service that will be used
-            * dict of proxy services in priority order {
-                                                 "1st proxy service" : <<number of tries>>,
-                                                 "2nd proxy service" : <<number of tries>>,
-                                                 ..} ** The number of tries will overwrite the max_retries param
+            * list of dicts of proxy services in priority order[
+                                                 {"1st proxy service" : <<number of tries>>},
+                                                 {"2nd proxy service" : <<number of tries>>},
+                                                 ..]** The number of tries will override the max_retries param
             *** Use None to use no proxy server
         :param max_retries: integer of max number of retries by failed request for every proxy service
         :param cookies: RequestCookieJar or Dict or Str with the cookies that will persist for the whole request session
         :param fake_ua: Boolean to indicate if a Fake User-Agent will be used for the whole request session
-            ** This User-Agent will overwrite the one from the headers
+            ** This User-Agent will override the one from the headers
         :param headers: Dict with the headers that will persist for the whole session
         :param timeout: Integer or String digit with the timeout for the request that will persist for the whole session
         :param delay:
@@ -75,6 +38,44 @@ class ByRequest():
             * int or string digit of the max seconds of wait after a request failed
         :param verify: Boolean to indicate if the SSL verification is enabled or not
         """
+        self.proxies_retries = {
+            None: 3,
+            "crawlera": 3,
+            "scrapoxy": 3,
+            "luminati": 3
+        }
+        self.timeout = 15
+        self.extras = {}
+        self.delay = [1, 3]
+        self.max_retries = 3
+        self.proxies_order = [None, "crawlera", "scrapoxy", "luminati"]
+        self.headers = {}
+        self.cookies = {}
+        self.verify = True
+        self.delay_after = [0, 1]
+        self.stats = {
+            None: {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            },
+            "crawlera": {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            },
+            "scrapoxy": {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            },
+            "luminati": {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            }
+        }
+
         if max_retries:
             logger.debug("Assigning max_retries...")
             try:
@@ -90,7 +91,29 @@ class ByRequest():
                 logger.debug("Assigning order of proxy servers...")
                 proxy_order = []
                 for proxy in proxies:
-                    if proxy in self.proxies_retries.keys():
+                    if isinstance(proxy, dict):
+                        if len(proxy) == 1:
+                            logger.debug("Assigning order and max retries of proxy servers...")
+                            for p, retries in proxy.items():
+                                if p in self.proxies_retries.keys() or (
+                                        isinstance(p, str) and p.lower() in self.proxies_retries.keys()):
+                                    try:
+                                        if max_retries:
+                                            logger.warning("Overriding max_retries for {}".format(p))
+                                        if p == None:
+                                            self.proxies_retries[p] = int(retries)
+                                            proxy_order.append(p)
+                                        else:
+                                            self.proxies_retries[p.lower()] = int(retries)
+                                            proxy_order.append(p.lower())
+                                    except Exception as e:
+                                        logger.warning("Error while assigning proxies")
+                                        logger.error(e)
+                                else:
+                                    logger.error("{proxy} is not in the list of valid proxies".format(proxy=str(p)))
+                        else:
+                            logger.error("Poxy service dict should be of length 1")
+                    elif proxy in self.proxies_retries.keys():
                         proxy_order.append(proxy)
                     elif isinstance(proxy, str) and proxy.lower() in self.proxies_retries.keys():
                         proxy_order.append(proxy.lower())
@@ -101,24 +124,6 @@ class ByRequest():
                     self.proxies_order = [proxies.lower()]
                 else:
                     logger.error("{proxy} is not a valid proxy server".format(proxy=proxies))
-            elif isinstance(proxies, dict):
-                logger.debug("Assigning order and max retries of proxy servers...")
-                proxies_retries_aux = {}
-                for proxy, retries in proxies.items():
-                    if proxy in self.proxies_retries.keys() or (
-                            isinstance(proxy, str) and proxy.lower() in self.proxies_retries.keys()):
-                        try:
-                            proxies_retries_aux[proxy] = int(retries)
-                        except Exception as e:
-                            logger.warning("Error while assigning proxies")
-                            logger.error(e)
-                    else:
-                        logger.error("{proxy} is not in the list of valid proxies".format(proxy=str(proxy)))
-                if proxies_retries_aux:
-                    self.proxies_retries = proxies_retries_aux
-                    self.proxies_order = list(self.proxies_retries.keys())
-                    if max_retries:
-                        logger.warning("Overwriting max_retries")
 
         if headers:
             logger.debug("Assigning headers...")
@@ -388,9 +393,9 @@ class ByRequest():
             logger.error("Soup cannot be returned")
 
     def print_status(self, percentage=True):
-        print("----------------------------------------------------------------------")
-        print("---                            Stats                               ---")
-        print("----------------------------------------------------------------------")
+        print("------------------------------------------------------------------------------")
+        print("---                                Stats                                   ---")
+        print("------------------------------------------------------------------------------")
         total = 0
         total_succ = 0
         total_fail = 0
@@ -402,7 +407,7 @@ class ByRequest():
                 if proxy == None:
                     proxies = "Without proxies: "
                 else:
-                    proxies = "Using {proxy} service: ".format(proxy=proxy)
+                    proxies = "Using {proxy}: ".format(proxy=proxy)
                 if percentage:
                     tot = str(dict_["Total"])
                     succ = str((dict_["Successful"]/dict_["Total"])*100) + "%"
