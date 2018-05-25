@@ -139,3 +139,11 @@ verify (DEFAULT=True)
 byrequest = ByRequest(verify=False)
 print(byrequest.verify)
 ```
+
+logger (DEFAULT=logging.getLogger(__name__))
+```python
+import logging
+#  logger parameter allows you to send the log messages through your own customized logger
+logger = logging.getLogger(<APP_NAME>)
+byrequest = ByRequest(logger=logger)
+```

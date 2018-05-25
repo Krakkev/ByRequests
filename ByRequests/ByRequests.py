@@ -9,13 +9,14 @@ import random
 from lxml import html
 
 ua = UserAgent()
-logger = logging.getLogger(__name__)
+
 
 
 class ByRequest():
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
-                 delay=False, delay_after=False, verify=True):
+                 delay=False, delay_after=False, verify=True, logger=False):
+
         """
         Create object with the initial parameters
         :param proxies:
@@ -37,7 +38,13 @@ class ByRequest():
             * tuple (min, max) of the range of random seconds of wait between a request failed and a new retry
             * int or string digit of the max seconds of wait after a request failed
         :param verify: Boolean to indicate if the SSL verification is enabled or not
+        :param logger: LoggingVariable with the logger configuration
         """
+        if logger is not False:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger(__name__)
+
         self.proxies_retries = {
             None: 3,
             "crawlera": 3,
@@ -77,29 +84,29 @@ class ByRequest():
         }
 
         if max_retries:
-            logger.debug("Assigning max_retries...")
+            self.logger.debug("Assigning max_retries...")
             try:
                 self.max_retries = int(max_retries)
             except:
-                logger.error("Max retires cannot be converted to integer")
+                self.logger.error("Max retires cannot be converted to integer")
             for proxy in self.proxies_retries:
                 self.proxies_retries[proxy] = self.max_retries
 
         if proxies:
-            logger.debug("Assigning proxies...")
+            self.logger.debug("Assigning proxies...")
             if isinstance(proxies, list):
-                logger.debug("Assigning order of proxy servers...")
+                self.logger.debug("Assigning order of proxy servers...")
                 proxy_order = []
                 for proxy in proxies:
                     if isinstance(proxy, dict):
                         if len(proxy) == 1:
-                            logger.debug("Assigning order and max retries of proxy servers...")
+                            self.logger.debug("Assigning order and max retries of proxy servers...")
                             for p, retries in proxy.items():
                                 if p in self.proxies_retries.keys() or (
                                         isinstance(p, str) and p.lower() in self.proxies_retries.keys()):
                                     try:
                                         if max_retries:
-                                            logger.warning("Overriding max_retries for {}".format(p))
+                                            self.logger.warning("Overriding max_retries for {}".format(p))
                                         if p == None:
                                             self.proxies_retries[p] = int(retries)
                                             proxy_order.append(p)
@@ -107,26 +114,26 @@ class ByRequest():
                                             self.proxies_retries[p.lower()] = int(retries)
                                             proxy_order.append(p.lower())
                                     except Exception as e:
-                                        logger.warning("Error while assigning proxies")
-                                        logger.error(e)
+                                        self.logger.warning("Error while assigning proxies")
+                                        self.logger.error(e)
                                 else:
-                                    logger.error("{proxy} is not in the list of valid proxies".format(proxy=str(p)))
+                                    self.logger.error("{proxy} is not in the list of valid proxies".format(proxy=str(p)))
                         else:
-                            logger.error("Poxy service dict should be of length 1")
+                            self.logger.error("Poxy service dict should be of length 1")
                     elif proxy in self.proxies_retries.keys():
                         proxy_order.append(proxy)
                     elif isinstance(proxy, str) and proxy.lower() in self.proxies_retries.keys():
                         proxy_order.append(proxy.lower())
                 self.proxies_order = proxy_order
             elif isinstance(proxies, str):
-                logger.debug("Assigning single proxy server...")
+                self.logger.debug("Assigning single proxy server...")
                 if proxies.lower() in self.proxies_order:
                     self.proxies_order = [proxies.lower()]
                 else:
-                    logger.error("{proxy} is not a valid proxy server".format(proxy=proxies))
+                    self.logger.error("{proxy} is not a valid proxy server".format(proxy=proxies))
 
         if headers:
-            logger.debug("Assigning headers...")
+            self.logger.debug("Assigning headers...")
             if isinstance(headers, dict):
                 self.headers = headers
             elif isinstance(headers, str):
@@ -134,21 +141,21 @@ class ByRequest():
                     self.headers = ast.literal_eval(headers)
                 except:
                     self.headers = {}
-                    logger.error("Headers string cannot be converted to dict")
+                    self.logger.error("Headers string cannot be converted to dict")
             else:
-                logger.error("Headers are not valid")
+                self.logger.error("Headers are not valid")
 
         if fake_ua:
-            logger.debug("Assigning fake User-Agent...")
+            self.logger.debug("Assigning fake User-Agent...")
             try:
                 user_agent = ua.random
                 self.headers['User-Agent'] = user_agent
             except Exception as e:
-                logger.warning("The fake user agent cannot be added to headers")
-                logger.error(e)
+                self.logger.warning("The fake user agent cannot be added to headers")
+                self.logger.error(e)
 
         if cookies:
-            logger.debug("Assigning cookies...")
+            self.logger.debug("Assigning cookies...")
             if isinstance(cookies, requests.cookies.RequestsCookieJar) or isinstance(cookies, dict):
                 self.cookies = cookies
             elif isinstance(cookies, str):
@@ -156,90 +163,90 @@ class ByRequest():
                     try:
                         self.cookies = ast.literal_eval(cookies)
                     except:
-                        logger.error("Cookies string cannot be converted to dict")
+                        self.logger.error("Cookies string cannot be converted to dict")
                 else:
                     self.headers["cookie"]=cookies
             else:
-                logger.error("Cookies are not valid")
+                self.logger.error("Cookies are not valid")
 
         if timeout:
-            logger.debug("Assigning timeout...")
+            self.logger.debug("Assigning timeout...")
             if isinstance(timeout, int):
                 self.timeout = abs(timeout)
             else:
                 try:
                     self.timeout = abs(int(timeout))
                 except:
-                    logger.error("Timeout cannot be converted to integer")
+                    self.logger.error("Timeout cannot be converted to integer")
 
         if delay:
-            logger.debug("Assigning delay...")
+            self.logger.debug("Assigning delay...")
             if isinstance(delay, list) or isinstance(delay, tuple):
                 if len(delay) == 2:
-                    logger.debug("Assigning min & max seconds...")
+                    self.logger.debug("Assigning min & max seconds...")
                     try:
                         if int(delay[0]) < int(delay[1]):
                             self.delay[0] = int(delay[0])
                             self.delay[1] = int(delay[1])
                         else:
-                            logger.error("delay[1] value should be higher than delay[0]")
+                            self.logger.error("delay[1] value should be higher than delay[0]")
                     except:
-                        logger.error("Delay values cannot converted to integers")
+                        self.logger.error("Delay values cannot converted to integers")
                 elif len(delay) == 1:
                     try:
-                        logger.debug("Assigning max seconds...")
+                        self.logger.debug("Assigning max seconds...")
                         if int(delay[0]) > 1:
                             self.delay[1] = int(delay[0])
                         else:
-                            logger.error("delay[0] value should be higher than 1")
+                            self.logger.error("delay[0] value should be higher than 1")
                     except:
-                        logger.error("Delay value cannot converted to integer")
+                        self.logger.error("Delay value cannot converted to integer")
                 else:
-                    logger.error("Delay should contain 1 or 2 integer values")
+                    self.logger.error("Delay should contain 1 or 2 integer values")
             else:
                 try:
-                    logger.debug("Assigning max seconds...")
+                    self.logger.debug("Assigning max seconds...")
                     if int(delay) > 1:
                         self.delay[1] = int(delay)
                     else:
-                        logger.error("Delay value should be higher than 1")
+                        self.logger.error("Delay value should be higher than 1")
                 except:
-                    logger.error("Delay value cannot be converted into integer")
+                    self.logger.error("Delay value cannot be converted into integer")
 
         if delay_after:
-            logger.debug("Assigning delay after request...")
+            self.logger.debug("Assigning delay after request...")
             if isinstance(delay_after, list) or isinstance(delay_after, tuple):
                 if len(delay_after) == 2:
-                    logger.debug("Assigning min & max seconds...")
+                    self.logger.debug("Assigning min & max seconds...")
                     try:
                         if int(delay_after[0]) < int(delay_after[1]):
                             self.delay_after[0] = int(delay_after[0])
                             self.delay_after[1] = int(delay_after[1])
                         else:
-                            logger.error("delay_after[1] value should be higher than delay_afer[0]")
+                            self.logger.error("delay_after[1] value should be higher than delay_afer[0]")
 
                     except:
-                        logger.error("Delay value values cannot converted to integers")
+                        self.logger.error("Delay value values cannot converted to integers")
                 elif len(delay_after) == 1:
                     try:
-                        logger.debug("Assigning max seconds...")
+                        self.logger.debug("Assigning max seconds...")
                         if int(delay_after[0]) > 0:
                             self.delay_after[1] = int(delay_after[0])
                         else:
-                            logger.error("delay[0] value should be higher than 0")
+                            self.logger.error("delay[0] value should be higher than 0")
                     except:
-                        logger.error("Delay after value cannot converted to integer")
+                        self.logger.error("Delay after value cannot converted to integer")
                 else:
-                    logger.error("Delay after should contain 1 or 2 integer values")
+                    self.logger.error("Delay after should contain 1 or 2 integer values")
             else:
                 try:
-                    logger.debug("Assigning max seconds...")
+                    self.logger.debug("Assigning max seconds...")
                     if int(delay_after) > 0:
                         self.delay_after[1] = int(delay_after)
                     else:
-                        logger.error("Delay value should be higher than 0")
+                        self.logger.error("Delay value should be higher than 0")
                 except:
-                    logger.error("Delay after value cannot be converted into integer")
+                    self.logger.error("Delay after value cannot be converted into integer")
 
         if verify is not True:
             self.verify = verify
@@ -256,7 +263,7 @@ class ByRequest():
         :param kwargs: Extra parameters that can be used for requests.request
         :return: request or json depending on the return_json param.
         """
-        logger.debug("Executing request...")
+        self.logger.debug("Executing request...")
         if self.proxies_order:
             if br_session == True:
                 headers_ = kwargs.pop("headers", self.headers)
@@ -279,9 +286,9 @@ class ByRequest():
                 is_proxies_defined = True
 
             for proxy in proxies_order:
-                logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy))
+                self.logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy))
                 for retry in range(1, kwargs.pop("max_retries", self.proxies_retries.get(proxy)) + 1):
-                    logger.debug("Try #{retry}...".format(retry=retry))
+                    self.logger.debug("Try #{retry}...".format(retry=retry))
                     self.stats[proxy]["Total"] += 1
                     try:
                         if not is_proxies_defined:
@@ -289,11 +296,11 @@ class ByRequest():
                         if fake_ua:
                             headers_["User-Agent"] = ua.random
                         if retry == self.proxies_retries.get(proxy) and self.verify == False:
-                            logger.warning("Trying with verify as False")
+                            self.logger.warning("Trying with verify as False")
                             response = requests.request(method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=True, timeout=timeout_, **kwargs)
                         else:
-                            print("Headers --->", str(headers_), "proxies --->", str(proxies_))
+                            self.logge.debug("Headers --->", str(headers_), "proxies --->", str(proxies_))
                             response = requests.request(method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
                         if response.status_code == 200:
@@ -305,11 +312,11 @@ class ByRequest():
                                 try:
                                     return response.json()
                                 except:
-                                    logger.error("Json cannot be obtained from request")
+                                    self.logger.error("Json cannot be obtained from request")
                                     return response
 
                         else:
-                            logger.warning(
+                            self.logger.warning(
                                 "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy, retry=retry,
                                                                                       url=url))
                             time.sleep(random.randrange(delay[0], delay[1]))
@@ -317,19 +324,19 @@ class ByRequest():
                             continue
 
                     except Exception as e:
-                        logger.error(e)
-                        logger.warning(
+                        self.logger.error(e)
+                        self.logger.warning(
                             "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy, retry=retry, url=url))
                         time.sleep(random.randrange(delay[0], delay[1]))
                         self.stats[proxy]["Failed"] += 1
                         continue
-                logger.warning(
+                        self.logger.warning(
                     "[{proxy}] Was not able to return a good response for {url}".format(proxy=proxy, url=url))
-            logger.error(
+                        self.logger.error(
                 "REQUEST ERROR {url}".format(url=url))
             return False
         else:
-            logger.error("Proxies are not well defined")
+            self.logger.error("Proxies are not well defined")
 
     def post(self, url, fake_ua=False, return_json=False, br_session=True, **kwargs):
         """
@@ -361,17 +368,17 @@ class ByRequest():
         :param url: str of the url of the html
         :return: BeautifulSoup
         """
-        logger.debug("Getting soup...")
+        self.logger.debug("Getting soup...")
         response = self.get(url, **kwargs)
         if response:
             try:
                 return BeautifulSoup(response.content, 'html.parser')
             except Exception as e:
-                logger.error("Error while parsing the soup")
-                logger.error(e)
+                self.logger.error("Error while parsing the soup")
+                self.logger.error(e)
 
         else:
-            logger.error("Soup cannot be returned")
+            self.logger.error("Soup cannot be returned")
 
     def xpath(self, url, **kwargs):
         """
@@ -379,18 +386,18 @@ class ByRequest():
         :param url: str of the url of the html
         :return: XpathTree
         """
-        logger.debug("Getting xpath...")
+        self.logger.debug("Getting xpath...")
         response = self.get(url, **kwargs)
         if response:
             try:
                 tree = html.fromstring(response.content)
                 return tree
             except Exception as e:
-                logger.error("Error while parsing the xpath")
-                logger.error(e)
+                self.logger.error("Error while parsing the xpath")
+                self.logger.error(e)
 
         else:
-            logger.error("Soup cannot be returned")
+            self.logger.error("Soup cannot be returned")
 
     def print_status(self, percentage=True):
         print("------------------------------------------------------------------------------")
@@ -416,42 +423,42 @@ class ByRequest():
                     tot = str(dict_["Total"])
                     succ = str(dict_["Successful"])
                     fail = str(dict_["Failed"]/dict_["Total"])
+                self.logger.info("{proxies} \t {succ} Successful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
                 print("{proxies} \t {succ} Successful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
 
-    @staticmethod
-    def get_proxies(server=None):
+    def get_proxies(self, server=None):
         """
         Method to get the proxies request parameter for different proxy services
         :param server: Name of the proxy service
         :return: dict of http methods and their corresponding proxy service
         """
-        logger.debug("Getting proxies dict...")
+        self.logger.debug("Getting proxies dict...")
         if server == None:
-            logger.debug("Without proxies...")
+            self.logger.debug("Without proxies...")
             return {}
         if server == 'crawlera':
-            logger.debug("Proxies from crawlera...")
+            self.logger.debug("Proxies from crawlera...")
             proxy_host = "proxy.crawlera.com"
             proxy_port = "8010"
             proxy_auth = "{}:".format(os.getenv('CRAWLERA', 'api_key'))  # Make sure to include ':' at the end
             proxies = {"https": "https://{}@{}:{}/".format(proxy_auth, proxy_host, proxy_port),
                        "http": "http://{}@{}:{}/".format(proxy_auth, proxy_host, proxy_port)}
-            logger.debug("Returning:" + str(proxies))
+            self.logger.debug("Returning:" + str(proxies))
             return proxies
         if server == "scrapoxy":
-            logger.debug("Proxies from scrapoy...")
+            self.logger.debug("Proxies from scrapoy...")
             proxy_host = "{}".format(os.getenv('SCRAPOXY', 'localhost'))
             proxy_port = "8888"
             proxies = {"https": "https://{}:{}/".format(proxy_host, proxy_port),
                        "http": "http://{}:{}/".format(proxy_host, proxy_port)}
-            logger.debug("Returning:" + str(proxies))
+            self.logger.debug("Returning:" + str(proxies))
             return proxies
         if server == "luminati":
-            logger.debug("Proxies from scrapoy...")
+            self.logger.debug("Proxies from scrapoy...")
             #luminati = http://lum-customer-{costumer}-zone-{zone}:{password}@zproxy.lum-superproxy.io:{port}#
             luminati = "{}".format(os.getenv('LUMINATI', 'localhost'))
             proxies = {"https": luminati,
                        "http": luminati}
-            logger.debug("Returning:" + str(proxies))
+            self.logger.debug("Returning:" + str(proxies))
             return proxies
 
