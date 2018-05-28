@@ -7,6 +7,8 @@ import os
 import logging
 import random
 from lxml import html
+import time
+import timeout_decorator
 
 ua = UserAgent()
 
@@ -15,7 +17,7 @@ ua = UserAgent()
 class ByRequest():
 
     def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
-                 delay=False, delay_after=False, verify=True, logger=False):
+                 delay=False, delay_after=False, verify=True, logger=False, real_timeout=None):
 
         """
         Create object with the initial parameters
@@ -33,6 +35,7 @@ class ByRequest():
             ** This User-Agent will override the one from the headers
         :param headers: Dict with the headers that will persist for the whole session
         :param timeout: Integer or String digit with the timeout for the request that will persist for the whole session
+        :param real_timeout: Integer or String digit with the timeout of the whole requests process
         :param delay:
             * list [min, max] of the range of random seconds of wait between a request failed and a new retry
             * tuple (min, max) of the range of random seconds of wait between a request failed and a new retry
@@ -82,6 +85,14 @@ class ByRequest():
                 "Failed": 0
             }
         }
+        if real_timeout:
+            try:
+                self.real_timeout = int(real_timeout)
+            except:
+                self.logger.error("Real timeout value should be an integer or None")
+                self.real_timeout = None
+        else:
+            self.real_timeout = None
 
         if max_retries:
             self.logger.debug("Assigning max_retries...")
@@ -92,7 +103,7 @@ class ByRequest():
             for proxy in self.proxies_retries:
                 self.proxies_retries[proxy] = self.max_retries
 
-        if proxies:
+        if proxies or proxies is None:
             self.logger.debug("Assigning proxies...")
             if isinstance(proxies, list):
                 self.logger.debug("Assigning order of proxy servers...")
@@ -131,6 +142,9 @@ class ByRequest():
                     self.proxies_order = [proxies.lower()]
                 else:
                     self.logger.error("{proxy} is not a valid proxy server".format(proxy=proxies))
+            elif proxies is None:
+                self.logger.debug("Assigning single proxy server...")
+                self.proxies_order = [None]
 
         if headers:
             self.logger.debug("Assigning headers...")
@@ -252,6 +266,12 @@ class ByRequest():
             self.verify = verify
 
 
+    def request_wrapper(self, real_timeout, *args, **kwargs):
+        @timeout_decorator.timeout(real_timeout, use_signals=False)
+        def wrapper():
+            return requests.request(*args, **kwargs)
+        return wrapper()
+
     def request(self, method, url, fake_ua=False, return_json=False, br_session=True,  **kwargs):
         """
         Method to create a http request
@@ -270,11 +290,13 @@ class ByRequest():
                 cookies_ = kwargs.pop("cookies", self.cookies)
                 delay = kwargs.pop("delay", self.delay)
                 delay_after = kwargs.pop("delay_after", self.delay_after)
+                real_timeout = kwargs.pop("real_timeout", self.real_timeout)
             else:
                 headers_ = kwargs.pop("headers", {})
                 cookies_ = kwargs.pop("cookies", {})
                 delay = kwargs.pop("delay", [0,1])
                 delay_after = kwargs.pop("delay_after", [0,1])
+                real_timeout = kwargs.pop("real_timeout", None)
 
             proxies_order = kwargs.pop("proxies_order", self.proxies_order)
             verify_ = kwargs.pop("verify", self.verify)
@@ -297,11 +319,11 @@ class ByRequest():
                             headers_["User-Agent"] = ua.random
                         if retry == self.proxies_retries.get(proxy) and self.verify == False:
                             self.logger.warning("Trying with verify as False")
-                            response = requests.request(method, url, headers=headers_, proxies=proxies_,
+                            response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=True, timeout=timeout_, **kwargs)
                         else:
                             self.logger.debug("Headers --->", str(headers_), "proxies --->", str(proxies_))
-                            response = requests.request(method, url, headers=headers_, proxies=proxies_,
+                            response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
                                                         cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
                         if response.status_code == 200:
                             self.stats[proxy]["Successful"] += 1
@@ -330,10 +352,9 @@ class ByRequest():
                         time.sleep(random.randrange(delay[0], delay[1]))
                         self.stats[proxy]["Failed"] += 1
                         continue
-                        self.logger.warning(
-                    "[{proxy}] Was not able to return a good response for {url}".format(proxy=proxy, url=url))
-                        self.logger.error(
-                "REQUEST ERROR {url}".format(url=url))
+                self.logger.warning("[{proxy}] Was not able to return a good response for {url}".format(proxy=proxy,
+                                                                                url=url))
+            self.logger.error("REQUEST ERROR {url}".format(url=url))
             return False
         else:
             self.logger.error("Proxies are not well defined")
