@@ -9,6 +9,8 @@ import random
 from lxml import html
 import time
 import timeout_decorator
+import eventlet
+from eventlet.timeout import Timeout
 
 ua = UserAgent()
 
@@ -267,10 +269,20 @@ class ByRequest():
 
 
     def request_wrapper(self, real_timeout, *args, **kwargs):
-        @timeout_decorator.timeout(real_timeout, use_signals=False)
-        def wrapper():
+        if real_timeout:
+            eventlet.monkey_patch()
+            with Timeout(real_timeout, False):
+                try:
+                    response = requests.request(*args, **kwargs)
+                    return response
+                except Timeout as t:
+                    self.logger.error("Real timeout {} secs".format(str(real_timeout)))
+                    response = requests.models.Response()
+                    response.status_code = 504
+                    return response
+        else:
             return requests.request(*args, **kwargs)
-        return wrapper()
+
 
     def request(self, method, url, fake_ua=False, return_json=False, br_session=True,  **kwargs):
         """
@@ -348,7 +360,7 @@ class ByRequest():
                     except Exception as e:
                         self.logger.error(e)
                         self.logger.warning(
-                            "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy, retry=retry, url=url))
+                            "[{proxy}] The Request #{retry} had an error: {url}".format(proxy=proxy, retry=retry, url=url))
                         time.sleep(random.randrange(delay[0], delay[1]))
                         self.stats[proxy]["Failed"] += 1
                         continue

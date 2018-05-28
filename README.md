@@ -98,10 +98,18 @@ print(byrequest.headers)
 
 timeout (DEFAULT=15)
 ```python
-#  Timeout parameter is the max time that a response will be waited before a timeout error showns for every request made with this session
+#  Timeout parameter is the max time that a request will wait for an answer before a timeout error shows for every request made with this session
 byrequest = ByRequest(timeout=5)
 print(byrequest.timeout)
 ```
+
+real_timeout (DEFAULT=15)
+```python	
+#  Timeout parameter is the max time for the whole requests process could take before a timeout error shows for every request made with this session
+byrequest = ByRequest(timeout=5)
+print(byrequest.timeout)
+```
+
 
 delay (DEFAULT=[1, 3])
 ```python
