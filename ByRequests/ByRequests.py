@@ -321,21 +321,18 @@ class ByRequest():
             for proxy in proxies_order:
                 self.logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy))
                 for retry in range(1, kwargs.pop("max_retries", self.proxies_retries.get(proxy)) + 1):
-                    self.logger.debug("Try #{retry}...".format(retry=retry))
+                    self.logger.debug("{proxy} attempt #{retry}...".format(proxy=proxy, retry=retry))
                     self.stats[proxy]["Total"] += 1
                     try:
                         if not is_proxies_defined:
                             proxies_ = self.get_proxies(proxy)
                         if fake_ua:
                             headers_["User-Agent"] = ua.random
-                        if retry == self.proxies_retries.get(proxy) and self.verify == False:
-                            self.logger.warning("Trying with verify as False")
-                            response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
-                                                        cookies=cookies_, verify=True, timeout=timeout_, **kwargs)
-                        else:
-                            self.logger.debug("Headers --->", str(headers_), "proxies --->", str(proxies_))
-                            response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
-                                                        cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
+
+                        self.logger.debug("Headers: "+str(headers_) + "      Proxies: " + str(proxies_) + "     Cookies:" + str(cookies_), )
+                        response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
+                                                    cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
+
                         if response.status_code == 200:
                             self.stats[proxy]["Successful"] += 1
                             time.sleep(random.randrange(delay_after[0], delay_after[1]))
