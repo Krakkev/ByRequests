@@ -8,7 +8,6 @@ import logging
 import random
 from lxml import html
 import time
-import timeout_decorator
 import eventlet
 from eventlet.timeout import Timeout
 
