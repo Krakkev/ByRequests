@@ -480,7 +480,7 @@ class ByRequest():
             self.logger.debug("Returning:" + str(proxies))
             return proxies
         if server == "scrapoxy":
-            self.logger.debug("Proxies from scrapoy...")
+            self.logger.debug("Proxies from scrapoxy...")
             proxy_host = "{}".format(os.getenv('SCRAPOXY', 'localhost'))
             proxy_port = "8888"
             proxies = {"https": "https://{}:{}/".format(proxy_host, proxy_port),
@@ -488,7 +488,7 @@ class ByRequest():
             self.logger.debug("Returning:" + str(proxies))
             return proxies
         if server == "luminati":
-            self.logger.debug("Proxies from scrapoy...")
+            self.logger.debug("Proxies from luminati...")
             #luminati = http://lum-customer-{costumer}-zone-{zone}:{password}@zproxy.lum-superproxy.io:{port}#
             luminati = "{}".format(os.getenv('LUMINATI', 'localhost'))
             proxies = {"https": luminati,
