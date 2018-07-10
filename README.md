@@ -175,8 +175,6 @@ br.add_proxy("proxy_host2", name="ProxyService 2", order=2, attempts=3)
 br.add_proxy("proxy_host1", name="ProxyService 1", order=1, attempts=2)
 
 
-
-
 # You can check the proxies defined in your class printing the proxies attribute
 print(br.proxies)
 
@@ -187,6 +185,7 @@ print(br.stats)
 
 br2 = ByRequest(attempts=3)
 br2.get("http://some_url.io")
+
 # You can check how the stats of the requests  made by all your ByRequest objects printing the stats attribute
 print(br.stats_class)
 
@@ -195,5 +194,7 @@ print(br.stats_class)
 import pandas as pd
 stats = pd.DataFrame(br.stats)
 stats_class = pd.DataFrame(br.stats_class) # Equal to  pd.DataFrame(br2.stats_class)
+
+#!!! The stats sizes are an estimation that come from:  ( response_body + response_headers)  ONLY FROM THE SUCCESSFUL RESPONSES !!!
 
 ```

@@ -1,7 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
+import time
 from fake_useragent import UserAgent
 import ast
+import os
 import logging
 import random
 from lxml import html
@@ -12,10 +14,10 @@ from eventlet.timeout import Timeout
 ua = UserAgent()
 
 
-class ByRequest():
-    stats_class = {}
 
-    def __init__(self, proxies=None, attempts=1, cookies=False, fake_ua=True, headers=False, timeout=False,
+class ByRequest():
+
+    def __init__(self, proxies=False, max_retries=False, cookies=False, fake_ua=True, headers=False, timeout=False,
                  delay=False, delay_after=False, verify=True, logger=False, real_timeout=None):
 
         """
@@ -47,33 +49,43 @@ class ByRequest():
         else:
             self.logger = logging.getLogger(__name__)
 
-        self.proxies = {}
+        self.proxies_retries = {
+            None: 3,
+            "crawlera": 3,
+            "scrapoxy": 3,
+            "luminati": 3
+        }
         self.timeout = 15
         self.extras = {}
-        self.delay = [0, 1]
+        self.delay = [1, 3]
+        self.max_retries = 3
+        self.proxies_order = [None, "crawlera", "scrapoxy", "luminati"]
         self.headers = {}
         self.cookies = {}
         self.verify = True
         self.delay_after = [0, 1]
-        self.stats = {}
-
-        if proxies:
-            if isinstance(proxies, str):
-                self.add_proxy(host=proxies, attempts=attempts)
-            elif isinstance(proxies, dict):
-                if proxies.get("http") and proxies.get("https"):
-                    self.add_proxy(http=proxies.get("http"), https=proxies.get("https"), attempts=attempts)
-                elif proxies.get("http"):
-                    self.add_proxy(http=proxies.get("http"), attempts=attempts)
-                    self.logger.warning("proxy host for http was not defined")
-                elif proxies.get("https"):
-                    self.add_proxy(https=proxies.get("https"), attempts=attempts)
-                    self.logger.warning("proxy host for https was not defined")
-                else:
-                    self.logger.warning("proxy host for http and https were not defined")
-        else:
-            self.add_proxy(host=proxies, attempts=attempts)
-
+        self.stats = {
+            None: {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            },
+            "crawlera": {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            },
+            "scrapoxy": {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            },
+            "luminati": {
+                "Total": 0,
+                "Successful": 0,
+                "Failed": 0
+            }
+        }
         if real_timeout:
             try:
                 self.real_timeout = int(real_timeout)
@@ -82,6 +94,58 @@ class ByRequest():
                 self.real_timeout = None
         else:
             self.real_timeout = None
+
+        if max_retries:
+            self.logger.debug("Assigning max_retries...")
+            try:
+                self.max_retries = int(max_retries)
+            except:
+                self.logger.error("Max retires cannot be converted to integer")
+            for proxy in self.proxies_retries:
+                self.proxies_retries[proxy] = self.max_retries
+
+        if proxies or proxies is None:
+            self.logger.debug("Assigning proxies...")
+            if isinstance(proxies, list):
+                self.logger.debug("Assigning order of proxy servers...")
+                proxy_order = []
+                for proxy in proxies:
+                    if isinstance(proxy, dict):
+                        if len(proxy) == 1:
+                            self.logger.debug("Assigning order and max retries of proxy servers...")
+                            for p, retries in proxy.items():
+                                if p in self.proxies_retries.keys() or (
+                                        isinstance(p, str) and p.lower() in self.proxies_retries.keys()):
+                                    try:
+                                        if max_retries:
+                                            self.logger.warning("Overriding max_retries for {}".format(p))
+                                        if p == None:
+                                            self.proxies_retries[p] = int(retries)
+                                            proxy_order.append(p)
+                                        else:
+                                            self.proxies_retries[p.lower()] = int(retries)
+                                            proxy_order.append(p.lower())
+                                    except Exception as e:
+                                        self.logger.warning("Error while assigning proxies")
+                                        self.logger.error(e)
+                                else:
+                                    self.logger.error("{proxy} is not in the list of valid proxies".format(proxy=str(p)))
+                        else:
+                            self.logger.error("Poxy service dict should be of length 1")
+                    elif proxy in self.proxies_retries.keys():
+                        proxy_order.append(proxy)
+                    elif isinstance(proxy, str) and proxy.lower() in self.proxies_retries.keys():
+                        proxy_order.append(proxy.lower())
+                self.proxies_order = proxy_order
+            elif isinstance(proxies, str):
+                self.logger.debug("Assigning single proxy server...")
+                if proxies.lower() in self.proxies_order:
+                    self.proxies_order = [proxies.lower()]
+                else:
+                    self.logger.error("{proxy} is not a valid proxy server".format(proxy=proxies))
+            elif proxies is None:
+                self.logger.debug("Assigning single proxy server...")
+                self.proxies_order = [None]
 
         if headers:
             self.logger.debug("Assigning headers...")
@@ -116,7 +180,7 @@ class ByRequest():
                     except:
                         self.logger.error("Cookies string cannot be converted to dict")
                 else:
-                    self.headers["cookie"] = cookies
+                    self.headers["cookie"]=cookies
             else:
                 self.logger.error("Cookies are not valid")
 
@@ -202,87 +266,6 @@ class ByRequest():
         if verify is not True:
             self.verify = verify
 
-    def add_proxy(self, host=None, attempts=1, order=False, name=None, http=None, https=None):
-        if name and isinstance(name, str):
-            proxy_name = name
-        elif host and isinstance(host, str):
-            proxy_name = host
-        elif http and https and isinstance(http, str) and isinstance(https, str):
-            if http == https:
-                proxy_name = http
-            else:
-                proxy_name = "http: " + http + " - https: " + https
-        elif http and isinstance(http, str):
-            proxy_name = "http: " + http
-
-        elif https and isinstance(https, str):
-            proxy_name = "https: " + https
-
-        else:
-            proxy_name = "Without proxy"
-
-        try:
-            attempts = abs(int(attempts))
-        except:
-            self.logger.error("attempts argument should be an positive integer")
-
-        if order is False:
-            index = len(self.proxies)
-        else:
-            try:
-                index = abs(int(order))
-            except:
-                self.logger.error("order argument should be an positive integer")
-                index = len(self.proxies)
-
-        if host:
-            if self.proxies.get(index):
-                self.proxies[index].update({
-                    "http": host,
-                    "https": host,
-                    "attempts": attempts,
-                    "name": proxy_name
-                })
-            else:
-                self.proxies[index] = {
-                    "http": host,
-                    "https": host,
-                    "attempts": attempts,
-                    "name": proxy_name
-                }
-        else:
-            self.proxies[index] = {
-                "attempts": attempts,
-                "name": proxy_name
-            }
-
-        if http and isinstance(http, str):
-            self.proxies[index].update({
-                "http": http
-            })
-
-        if https and isinstance(https, str):
-            self.proxies[index].update({
-                "https": https
-            })
-
-        if not self.stats.get(proxy_name):
-            self.stats[proxy_name] = {
-                "Total": 0,
-                "Successful": 0,
-                "Failed": 0,
-                "AVG Size (Bytes)": 0,
-                "Total Size (Bytes)": 0
-            }
-
-        if not self.stats_class.get(proxy_name):
-            self.stats_class[proxy_name] = {
-                "Total": 0,
-                "Successful": 0,
-                "Failed": 0,
-                "AVG Size (Bytes)": 0,
-                "Total Size (Bytes)": 0
-            }
 
     def request_wrapper(self, real_timeout, *args, **kwargs):
         if real_timeout:
@@ -299,7 +282,8 @@ class ByRequest():
         else:
             return requests.request(*args, **kwargs)
 
-    def request(self, method, url, fake_ua=False, return_json=False, br_session=True, **kwargs):
+
+    def request(self, method, url, fake_ua=False, return_json=False, br_session=True,  **kwargs):
         """
         Method to create a http request
         :param method: str "GET" or "POST" to indicate the request method
@@ -311,89 +295,77 @@ class ByRequest():
         :return: request or json depending on the return_json param.
         """
         self.logger.debug("Executing request...")
+        if self.proxies_order:
+            if br_session == True:
+                headers_ = kwargs.pop("headers", self.headers)
+                cookies_ = kwargs.pop("cookies", self.cookies)
+                delay = kwargs.pop("delay", self.delay)
+                delay_after = kwargs.pop("delay_after", self.delay_after)
+                real_timeout = kwargs.pop("real_timeout", self.real_timeout)
+            else:
+                headers_ = kwargs.pop("headers", {})
+                cookies_ = kwargs.pop("cookies", {})
+                delay = kwargs.pop("delay", [0,1])
+                delay_after = kwargs.pop("delay_after", [0,1])
+                real_timeout = kwargs.pop("real_timeout", None)
 
+            proxies_order = kwargs.pop("proxies_order", self.proxies_order)
+            verify_ = kwargs.pop("verify", self.verify)
+            timeout_ = kwargs.pop("timeout", self.timeout)
+            proxies_ = kwargs.pop("proxies", False)
+            if proxies_ == False:
+                is_proxies_defined = False
+            else:
+                is_proxies_defined = True
 
-        if br_session == True:
-            headers_ = kwargs.pop("headers", self.headers)
-            cookies_ = kwargs.pop("cookies", self.cookies)
-            delay = kwargs.pop("delay", self.delay)
-            delay_after = kwargs.pop("delay_after", self.delay_after)
-            real_timeout = kwargs.pop("real_timeout", self.real_timeout)
-        else:
-            headers_ = kwargs.pop("headers", {})
-            cookies_ = kwargs.pop("cookies", {})
-            delay = kwargs.pop("delay", [0, 1])
-            delay_after = kwargs.pop("delay_after", [0, 1])
-            real_timeout = kwargs.pop("real_timeout", None)
+            for proxy in proxies_order:
+                self.logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy))
+                for retry in range(1, kwargs.pop("max_retries", self.proxies_retries.get(proxy)) + 1):
+                    self.logger.debug("{proxy} attempt #{retry}...".format(proxy=proxy, retry=retry))
+                    self.stats[proxy]["Total"] += 1
+                    try:
+                        if not is_proxies_defined:
+                            proxies_ = self.get_proxies(proxy)
+                        if fake_ua:
+                            headers_["User-Agent"] = ua.random
 
-        verify_ = kwargs.pop("verify", self.verify)
-        timeout_ = kwargs.pop("timeout", self.timeout)
-        indexes = list(self.proxies.keys())
-        indexes.sort()
-
-        for index in indexes:
-            proxy = self.proxies.get(index)
-            self.logger.debug("Trying with Proxy server {proxy}...".format(proxy=proxy.get("name")))
-            for retry in range(1, proxy.get("attempts") + 1):
-                self.logger.debug("{proxy} attempt #{retry}...".format(proxy=proxy.get("name"), retry=retry))
-                self.stats[proxy.get("name")]["Total"] += 1
-                self.stats_class[proxy.get("name")]["Total"] += 1
-                try:
-                    proxies_ = {}
-                    if proxy.get("http"):
-                        proxies_["http"] = proxy.get("http")
-                    if proxy.get("https"):
-                        proxies_["https"] = proxy.get("https")
-
-                    if fake_ua:
-                        headers_["User-Agent"] = ua.random
-
-                    self.logger.debug(
-                        "Headers: " + str(headers_) + "      Proxies: " + str(proxies_) + "     Cookies:" + str(
-                            cookies_), )
-                    response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
+                        self.logger.debug("Headers: "+str(headers_) + "      Proxies: " + str(proxies_) + "     Cookies:" + str(cookies_), )
+                        response = self.request_wrapper(real_timeout, method, url, headers=headers_, proxies=proxies_,
                                                     cookies=cookies_, verify=verify_, timeout=timeout_, **kwargs)
 
-                    if response.status_code == 200:
-                        self.stats[proxy.get("name")]["Successful"] += 1
-                        self.stats_class[proxy.get("name")]["Successful"] += 1
-                        size = (len(response.content) + len(str(response.headers)))
-                        self.stats[proxy.get("name")]["Total Size (Bytes)"] += size
-                        self.stats_class[proxy.get("name")]["Total Size (Bytes)"] += size
-                        self.stats[proxy.get("name")]["AVG Size (Bytes)"] = self.stats[proxy.get("name")]["Total Size (Bytes)"]/self.stats[proxy.get("name")]["Successful"]
-                        self.stats_class[proxy.get("name")]["AVG Size (Bytes)"] = self.stats_class[proxy.get("name")]["Total Size (Bytes)"]/self.stats_class[proxy.get("name")]["Successful"]
-                        time.sleep(random.randrange(delay_after[0], delay_after[1]))
-                        if not return_json:
-                            return response
-                        else:
-                            try:
-                                return response.json()
-                            except:
-                                self.logger.error("Json cannot be obtained from request")
+                        if response.status_code == 200:
+                            self.stats[proxy]["Successful"] += 1
+                            time.sleep(random.randrange(delay_after[0], delay_after[1]))
+                            if not return_json:
                                 return response
+                            else:
+                                try:
+                                    return response.json()
+                                except:
+                                    self.logger.error("Json cannot be obtained from request")
+                                    return response
 
-                    else:
+                        else:
+                            self.logger.warning(
+                                "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy, retry=retry,
+                                                                                      url=url))
+                            time.sleep(random.randrange(delay[0], delay[1]))
+                            self.stats[proxy]["Failed"] += 1
+                            continue
+
+                    except Exception as e:
+                        self.logger.error(e)
                         self.logger.warning(
-                            "[{proxy}] The Request #{retry} failed: {url}".format(proxy=proxy.get("name"), retry=retry,
-                                                                                  url=url))
+                            "[{proxy}] The Request #{retry} had an error: {url}".format(proxy=proxy, retry=retry, url=url))
                         time.sleep(random.randrange(delay[0], delay[1]))
-                        self.stats[proxy.get("name")]["Failed"] += 1
-                        self.stats_class[proxy.get("name")]["Failed"] += 1
+                        self.stats[proxy]["Failed"] += 1
                         continue
-
-                except Exception as e:
-                    self.logger.error(e)
-                    self.logger.warning(
-                        "[{proxy}] The Request #{retry} had an error: {url}".format(proxy=proxy.get("name"), retry=retry,
-                                                                                    url=url))
-                    time.sleep(random.randrange(delay[0], delay[1]))
-                    self.stats[proxy.get("name")]["Failed"] += 1
-                    self.stats_class[proxy.get("name")]["Failed"] += 1
-                    continue
-            self.logger.warning("[{proxy}] Was not able to return a good response for {url}".format(proxy=proxy.get("name"),
-                                                                                                    url=url))
-        self.logger.error("REQUEST ERROR {url}".format(url=url))
-        return False
+                self.logger.warning("[{proxy}] Was not able to return a good response for {url}".format(proxy=proxy,
+                                                                                url=url))
+            self.logger.error("REQUEST ERROR {url}".format(url=url))
+            return False
+        else:
+            self.logger.error("Proxies are not well defined")
 
     def post(self, url, fake_ua=False, return_json=False, br_session=True, **kwargs):
         """
@@ -429,7 +401,7 @@ class ByRequest():
         response = self.get(url, **kwargs)
         if response:
             try:
-                return BeautifulSoup(response.content.decode('utf-8'), 'html.parser')
+                return BeautifulSoup(response.content, 'html.parser')
             except Exception as e:
                 self.logger.error("Error while parsing the soup")
                 self.logger.error(e)
@@ -455,3 +427,68 @@ class ByRequest():
 
         else:
             self.logger.error("Soup cannot be returned")
+
+    def print_status(self, percentage=True):
+        print("------------------------------------------------------------------------------")
+        print("---                                Stats                                   ---")
+        print("------------------------------------------------------------------------------")
+        self.logger.info("---                                Stats                                   ---")
+        total = 0
+        total_succ = 0
+        total_fail = 0
+        for proxy, dict_ in self.stats.items():
+            if dict_["Total"] > 0:
+                total += dict_["Total"]
+                total_succ += dict_["Successful"]
+                total_fail += dict_["Failed"]
+                if proxy == None:
+                    proxies = "Without proxies: "
+                else:
+                    proxies = "Using {proxy}: ".format(proxy=proxy)
+                if percentage:
+                    tot = str(dict_["Total"])
+                    succ = str((dict_["Successful"]/dict_["Total"])*100) + "%"
+                    fail = str((dict_["Failed"]/dict_["Total"])*100) + "%"
+                else:
+                    tot = str(dict_["Total"])
+                    succ = str(dict_["Successful"])
+                    fail = str(dict_["Failed"]/dict_["Total"])
+                self.logger.info("{proxies} \t {succ} Successful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
+                print("{proxies} \t {succ} Successful \t {fail} Failed \t {tot} Total tries".format(proxies=proxies, succ=succ, fail=fail, tot=tot))
+
+    def get_proxies(self, server=None):
+        """
+        Method to get the proxies request parameter for different proxy services
+        :param server: Name of the proxy service
+        :return: dict of http methods and their corresponding proxy service
+        """
+        self.logger.debug("Getting proxies dict...")
+        if server == None:
+            self.logger.debug("Without proxies...")
+            return {}
+        if server == 'crawlera':
+            self.logger.debug("Proxies from crawlera...")
+            proxy_host = "proxy.crawlera.com"
+            proxy_port = "8010"
+            proxy_auth = "{}:".format(os.getenv('CRAWLERA', 'api_key'))  # Make sure to include ':' at the end
+            proxies = {"https": "https://{}@{}:{}/".format(proxy_auth, proxy_host, proxy_port),
+                       "http": "http://{}@{}:{}/".format(proxy_auth, proxy_host, proxy_port)}
+            self.logger.debug("Returning:" + str(proxies))
+            return proxies
+        if server == "scrapoxy":
+            self.logger.debug("Proxies from scrapoxy...")
+            proxy_host = "{}".format(os.getenv('SCRAPOXY', 'localhost'))
+            proxy_port = "8888"
+            proxies = {"https": "https://{}:{}/".format(proxy_host, proxy_port),
+                       "http": "http://{}:{}/".format(proxy_host, proxy_port)}
+            self.logger.debug("Returning:" + str(proxies))
+            return proxies
+        if server == "luminati":
+            self.logger.debug("Proxies from luminati...")
+            #luminati = http://lum-customer-{costumer}-zone-{zone}:{password}@zproxy.lum-superproxy.io:{port}#
+            luminati = "{}".format(os.getenv('LUMINATI', 'localhost'))
+            proxies = {"https": luminati,
+                       "http": luminati}
+            self.logger.debug("Returning:" + str(proxies))
+            return proxies
+
