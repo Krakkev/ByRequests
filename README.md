@@ -39,35 +39,17 @@ xpath = byrequest.xpath("http:www.someurl.com")
 print(xpath)
 ```
 
-max_retries (DEFAULT=3)
-```python
-#  Every request done by this session is going to be send 'max_retries' times for every proxy service unless a good response has been obtained
-byrequest = ByRequest(max_retries=1)
-print(byrequest.max_retries)
-```
 
 #### ByRequest Parameters
-proxies (DEFAULT=[None, "crawlera", "scrapoxy", "luminati"])
+proxies (DEFAULT=None)
 ```python
-# 1st Option:   proxies=None
+# 1st Option:   proxies="proxy_server_host"
 # Your requests done by this session are not going to use any kind of proxy service
-byrequest = ByRequest(proxies=None)
+byrequest = ByRequest(proxies="proxy_server_host")
 
-# 2nd Option:   proxies="<Proxy Service>"
+# 2nd Option:   proxies={"http": "proxy_server_http_host", "https": "proxy_server_https_host"}
 # Your requestsdone by this session  are going to use the proxy service that you specified
 byrequest = ByRequest(proxies="Crawlera")
-
-# 3rd Option:   proxies=[<Proxy Service>, <Proxy Service>]
-# The requests done by this session are going to be send with the proxy services that you specified  in the order that they appear for 3 times (Default value for max_retries, unless it has been specified with the max_retries parameter) unless a good response's obtained before.
-# * None represents the use of no proxies
-byrequest = ByRequest(proxies=[None, "Crawlera", "Scrapoxy", "crawlera"])
-
-
-# 4th Option:   proxies=[{<Proxy Service>: <max retries>}, {<Proxy Service>: <max retries>}]
-# The requests done by this session are going to be send with the proxy services that you specified  in the order that they appear 'max_retries' times each proxy service until a good response is obtained.
-# * None represents the use of no proxies
-# ** This max_retries overrides the max_retries parameter
-byrequest = ByRequest(proxies=[{None: 3}, {"luminati": 1}, "Scrapoxy", {"crawlera": "1"}])
 ```
 
 headers (DEFAULT={})
@@ -154,4 +136,64 @@ import logging
 #  logger parameter allows you to send the log messages through your own customized logger
 logger = logging.getLogger(<APP_NAME>)
 byrequest = ByRequest(logger=logger)
+```
+
+
+#### Add Proxies
+br = ByRequest()
+
+br.add_proxy(host=None, attempts=1, order=False, name=None, http=None, https=None)
+```python
+# Declare a host if it is going to be used for http & https requests
+br.add_proxy(host="server_host")
+
+
+# Declare http and/or https parameters if they are distinct host
+br.add_proxy(http="http_host", https="https_host")
+
+
+# Declare the name of the proxies to track their stats
+br.add_proxy("proxy_host", name="ProxyService 1")
+byrequest.stats
+
+
+# You can declare the order of execution of your proxies, otherwise it will be appended at the end (begins with 0)
+# If you declare a proxy with a previously oder defined it will overwrite the previous one
+# !!! The proxy with order 0 is the one declared when the class is defined !!!
+br.add_proxy("proxy_host", name="ProxyService 1", order=0)
+
+
+# You can define the number of attempts for each proxy service (DEFAULT=1)
+br.add_proxy("proxy_host", name="ProxyService 1", attempts=5)
+```
+
+
+#### Attributes
+```python
+br = ByRequest(attempts=3)
+br.add_proxy("proxy_host2", name="ProxyService 2", order=2, attempts=3)
+br.add_proxy("proxy_host1", name="ProxyService 1", order=1, attempts=2)
+
+
+
+
+# You can check the proxies defined in your class printing the proxies attribute
+print(br.proxies)
+
+# You can check how the stats of the requests  made by your ByRequest object printing the stats attribute
+br.get("http://some_url.io")
+print(br.stats)
+
+
+br2 = ByRequest(attempts=3)
+br2.get("http://some_url.io")
+# You can check how the stats of the requests  made by all your ByRequest objects printing the stats attribute
+print(br.stats_class)
+
+
+#If you like to use pandas library, you can use pandas to load your stats and visualize them easily
+import pandas as pd
+stats = pd.DataFrame(br.stats)
+stats_class = pd.DataFrame(br.stats_class) # Equal to  pd.DataFrame(br2.stats_class)
+
 ```
