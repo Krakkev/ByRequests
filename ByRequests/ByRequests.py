@@ -431,9 +431,11 @@ class ByRequest():
             try:
                 try:
                     content = response.content.decode('utf-8')
+                    soup = BeautifulSoup(content, 'html.parser')
                 except Exception as e:
                     content = response.content
-                return BeautifulSoup(content, 'html.parser')
+                    soup = BeautifulSoup(content, 'html.parser')
+                return soup
             except Exception as e:
                 self.logger.error("Error while parsing the soup")
                 self.logger.error(e)
@@ -453,9 +455,10 @@ class ByRequest():
             try:
                 try:
                     content = response.content.decode('utf-8')
+                    tree = html.fromstring(content)
                 except Exception as e:
                     content = response.content
-                tree = html.fromstring(content)
+                    tree = html.fromstring(content)
                 return tree
             except Exception as e:
                 self.logger.error("Error while parsing the xpath")
