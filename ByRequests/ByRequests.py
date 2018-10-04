@@ -9,7 +9,22 @@ import time
 import eventlet
 from eventlet.timeout import Timeout
 
-ua = UserAgent()
+
+try:
+    ua = UserAgent()
+except:
+    from UserAgents import UserAgents
+    class LocalUserAgent():
+        def __init__(self):
+            self.random = random.choice(
+                UserAgents.get(
+                    random.choice(
+                        list(
+                            UserAgents.keys()
+                             )
+                    )
+                )
+            )
 
 
 class ByRequest():
