@@ -13,18 +13,33 @@ from eventlet.timeout import Timeout
 try:
     ua = UserAgent()
 except:
+    print('Using ByUserAgent...')
     from UserAgents import UserAgents
-    class LocalUserAgent():
+    class ByUserAgent():
+
         def __init__(self):
-            self.random = random.choice(
-                UserAgents.get(
-                    random.choice(
-                        list(
-                            UserAgents.keys()
-                             )
+            self.safe_attrs = ['random', 'opera', 'safari', 'firefox']
+
+        def __getattr__(self, attr):
+            attr = attr.lower()
+            if attr in self.safe_attrs:
+                if attr == 'random':
+                    return random.choice(
+                        UserAgents.get(
+                            random.choice(
+                                list(
+                                    UserAgents.keys()
+                                )
+                            )
+                        )
                     )
-                )
-            )
+                else:
+                    return random.choice(
+                        UserAgents.get(
+                            attr
+                        )
+                    )
+    ua = ByUserAgent()
 
 
 class ByRequest():

@@ -160,7 +160,7 @@ safari_ua = [
 ]
 
 UserAgents = {
-    'chome': chrome_ua,
+    'chrome': chrome_ua,
     'firefox': firefox_ua,
     'safari_ua': safari_ua
 }

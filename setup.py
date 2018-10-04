@@ -15,7 +15,7 @@ setuptools.setup(
         'bs4>=0.0.1',
         'requests>=2.18.0',
         'urllib3>=1.21.1',
-        'fake-useragent>=0.1.10',
+        'fake-useragent>=0.1.11',
         'lxml>=4.1.0',
         'eventlet==0.23.0'
     ],
