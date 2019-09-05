@@ -9,9 +9,7 @@ $ pip install byrequests
 #### ENVIROMENT VARIABLES
 Export the enviroment variables of the proxy services that you are going to use
 ```bash
-export CRAWLERA='<API KEY>' # example CRAWLERA='17659951987l54e3296e142da791145e'
-export SCRAPOXY='<HOST>' # example SCRAPOXY='127.0.0.0'
-export LUMINATI='<COMPLETE URL>'  # example LUMINATI='http://lum-customer-ByRequest-zone-global:dj58yk1a9wtd@zproxy.lum-superproxy.io:22225'
+export PROXY_HOST='<COMPLETE URL>'  # example PROXY_HOST='http://lum-customer-ByRequest-zone-global:dj58yk1a9wtd@zproxy.lum-superproxy.io:22225'
 ```
 
 #### HOW TO DECLARE ByRequest SESSION
@@ -43,13 +41,16 @@ print(xpath)
 #### ByRequest Parameters
 proxies (DEFAULT=None)
 ```python
-# 1st Option:   proxies="proxy_server_host"
+import os 
+
+# 1st Option:
 # Your requests done by this session are not going to use any kind of proxy service
-byrequest = ByRequest(proxies="proxy_server_host")
+byrequest = ByRequest()
 
 # 2nd Option:   proxies={"http": "proxy_server_http_host", "https": "proxy_server_https_host"}
 # Your requestsdone by this session  are going to use the proxy service that you specified
-byrequest = ByRequest(proxies="Crawlera")
+PROXY_HOST = os.getenv('PROXY_HOST')
+byrequest = ByRequest(PROXY_HOST)
 ```
 
 headers (DEFAULT={})
@@ -87,6 +88,7 @@ print(byrequest.timeout)
 
 real_timeout (DEFAULT=15)
 ```python	
+# Be careful! This method use a multi threading timer to kill the request after the max time and it can break ipython and Jupyter. 
 #  Timeout parameter is the max time for the whole requests process could take before a timeout error shows for every request made with this session
 byrequest = ByRequest(timeout=5)
 print(byrequest.timeout)
