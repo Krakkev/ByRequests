@@ -25,7 +25,7 @@ response = byrequest.get("http:www.someurl.com")
 print(response)
 
 # Post Request obtaining json
-response_json = byrequest.post("http:www.someurl.com", returning_json=True)
+response_json = byrequest.post("http:www.someurl.com", return_json=True)
 print(response_json)
 
 # Parsing soup
