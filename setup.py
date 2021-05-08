@@ -17,7 +17,7 @@ setuptools.setup(
         'urllib3>=1.21.1',
         'fake-useragent>=0.1.11',
         'lxml>=4.1.0',
-        'eventlet==0.23.0'
+        'eventlet==0.31.0'
     ],
     classifiers=(
         "Programming Language :: Python :: 3",
